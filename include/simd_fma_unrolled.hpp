@@ -5,12 +5,13 @@
 
 #include <span>
 
+// AVX2/FMA C[i] += A[i] * B[i], unaligned and unrolled x2 (no alignment precondition).
 inline auto simd_fma_unrolled(const std::span<double> A, const std::span<double> B, std::span<double> C) -> void {
     std::size_t size = C.size() ;
     std::size_t i = 0 ;
 
-    // For unrolling we will use both FMA in our core 
-    for(; i + 8 <= size ; i += 8){ // i + 8 instead of i + 4 because we grad 8 doubles at a SINGULAR CPU INSTRUCTION
+    // Unrolled x2: two 4-double vectors (8 doubles) per iteration
+    for(; i + 8 <= size ; i += 8){
         __m256d buffer1 = _mm256_loadu_pd(&A[i]) ;
         __m256d buffer2 = _mm256_loadu_pd(&B[i]) ;
         __m256d result_buffer1 = _mm256_loadu_pd(&C[i]) ;
@@ -26,7 +27,7 @@ inline auto simd_fma_unrolled(const std::span<double> A, const std::span<double>
         _mm256_storeu_pd(&C[i+4], result_buffer2);
     }
 
-    // Finish off anything that remains 
+    // Scalar tail
     for(; i < size ; ++i){
         C[i] += A[i] * B[i] ;
     }

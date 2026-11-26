@@ -6,9 +6,8 @@
 
 #include "thread_pool.hpp"
 
-// Alligned as we guarantee that all contiguous blocks of memory will be aligned for our data type
-
-// TODO Benchmark with more result buffers (like 4 or 8)
+// C[i] = A[i] + B[i] over [block.start, block.end), unrolled x2 (8 doubles per iteration).
+// Precondition: &A[block.start], &B[block.start] and &C[block.start] are 32-byte aligned.
 inline auto simd_addition_unrolled_and_aligned_threaded(const std::span<double> A, const std::span<double> B, std::span<double> C,const work_block& block) -> void {
     std::size_t size = block.end ;
     std::size_t i = block.start ;
@@ -25,7 +24,7 @@ inline auto simd_addition_unrolled_and_aligned_threaded(const std::span<double> 
         _mm256_store_pd(&C[i+4], result_buffer2);
     }
 
-    for(; i < size ; ++i){ // Clear the tail the good old way 
+    for(; i < size ; ++i){ // Scalar tail
         C[i] = A[i] + B[i] ;
     }
 

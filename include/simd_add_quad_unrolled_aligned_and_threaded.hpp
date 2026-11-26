@@ -5,13 +5,16 @@
 
 #include "thread_pool.hpp"
 
-// Alligned as we guarantee that all contiguous blocks of memory will be aligned for our data type
-
-// TODO Benchmark with more result buffers (like 4 or 8)
+// Per-worker kernel run by thread_pool: C[i] = A[i] + B[i] over [block.start, block.end),
+// unrolled x4 (16 doubles per iteration).
+// Precondition: &A[block.start], &B[block.start] and &C[block.start] are 32-byte aligned.
+// thread_pool provides this when the base pointers are 32-byte aligned, because every
+// block starts at a multiple of 16 elements.
 inline auto simd_addition_quad_unrolled_aligned_and_threaded(const double* A, const double* B, double* C,const work_block& block) -> void {
     std::size_t size = block.end ;
     std::size_t i = block.start ;
-    
+
+    // End of the part of the block that is a whole number of 16-element chunks
     std::size_t limit = i + ((size - i) & ~15ULL);
 
     for(; i < limit ; i += 16){ 
@@ -36,7 +39,7 @@ inline auto simd_addition_quad_unrolled_aligned_and_threaded(const double* A, co
         _mm256_store_pd(&C[i+12], result_buffer4);
     }
 
-    for(; i < size ; ++i){ // Clear the tail the good old way 
+    for(; i < size ; ++i){ // Scalar tail
         C[i] = A[i] + B[i] ;
     }
 

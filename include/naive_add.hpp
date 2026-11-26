@@ -3,9 +3,9 @@
 #include <span>
 #include <cstddef>
 
-// Here we define the function for the naive_addition which is not vectorised by the vectorised
-// by the compiler through the pragma flags , the spans are pointer + size of the underlying 
-// contiguous memory containers (array or vector) 
+// Scalar baseline for C[i] = A[i] + B[i].
+// Auto-vectorization is disabled for this function so the comparison against the
+// intrinsic versions is meaningful. The pragma is GCC-specific; Clang ignores it.
 
 #pragma GCC push_options
 #pragma GCC optimize ("no-tree-vectorize")

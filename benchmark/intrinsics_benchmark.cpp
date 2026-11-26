@@ -129,7 +129,7 @@ static void BM_SIMD_ADD_ALIGNED(benchmark::State& state){
     std::size_t alignment = alignof(__m256i);
 
    if (bytes % alignment != 0) {
-        bytes += alignment - (bytes % alignment); // Pad to next multiple of 32
+        bytes += alignment - (bytes % alignment); // std::aligned_alloc requires size to be a multiple of alignment
     }
 
     int* A = static_cast<int*>(std::aligned_alloc(alignment , bytes));
@@ -169,7 +169,7 @@ static void BM_SIMD_FMA_ALIGNED(benchmark::State& state){
     std::size_t alignment = alignof(__m256d);
 
    if (bytes % alignment != 0) {
-        bytes += alignment - (bytes % alignment); // Pad to next multiple of 64
+        bytes += alignment - (bytes % alignment); // std::aligned_alloc requires size to be a multiple of alignment
     }
 
     double* A = static_cast<double*>(std::aligned_alloc(alignment , bytes));
@@ -209,7 +209,7 @@ static void BM_SIMD_FMA_UNROLLED_AND_ALIGNED(benchmark::State& state){
     std::size_t alignment = alignof(__m256d);
 
    if (bytes % alignment != 0) {
-        bytes += alignment - (bytes % alignment); // Pad to next multiple of 64
+        bytes += alignment - (bytes % alignment); // std::aligned_alloc requires size to be a multiple of alignment
     }
 
     double* A = static_cast<double*>(std::aligned_alloc(alignment , bytes));
@@ -248,7 +248,7 @@ static void BM_SIMD_ADD_UNROLLED_AND_ALIGNED_THREADED(benchmark::State& state) {
     std::size_t alignment = alignof(__m256d);
 
     if (bytes % alignment != 0) {
-        bytes += alignment - (bytes % alignment); // Pad to next multiple of 64
+        bytes += alignment - (bytes % alignment); // std::aligned_alloc requires size to be a multiple of alignment
     }
 
     double* A = static_cast<double*>(std::aligned_alloc(alignment , bytes)) ;
@@ -270,7 +270,7 @@ static void BM_SIMD_ADD_UNROLLED_AND_ALIGNED_THREADED(benchmark::State& state) {
 
     benchmark::DoNotOptimize(&pool);
 
-    // Lock the main thread too
+    // Pin the main thread to CPU 0 (workers are pinned to CPUs 2, 4, ..., 14)
     cpu_set_t main_set;
     CPU_ZERO(&main_set);
     CPU_SET(0, &main_set);
@@ -283,7 +283,7 @@ static void BM_SIMD_ADD_UNROLLED_AND_ALIGNED_THREADED(benchmark::State& state) {
     }
 
     state.SetItemsProcessed(state.iterations() * n_elements);
-    state.SetBytesProcessed(state.iterations() * n_elements * sizeof(__m256d));
+    state.SetBytesProcessed(state.iterations() * n_elements * 3 * sizeof(double));
 
     std::free(A);
     std::free(B);
